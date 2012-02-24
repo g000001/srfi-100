@@ -333,7 +333,7 @@
       `(error 'define-lambda-object "not available inspection" ,symbol)
       (let ((arg (car args)))
 	`(if (eq? ,symbol ',arg)
-	     ,(intern (symbol-name arg))
+	     ,(intern (symbol-name arg) :srfi-100.internal)
 	     (unquote-get* ,symbol ,(cdr args))))))
 
 (define-macro (unquote-set! symbol new-val args iargs)
