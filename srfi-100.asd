@@ -7,6 +7,7 @@
   :depends-on (:fiveam
                :named-readtables
                :quasiquote1
+               :srfi-16
                :srfi-23
                :mbe)
   :components ((:file "package")
