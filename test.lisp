@@ -1,17 +1,21 @@
-(cl:in-package :srfi-100.internal)
+(cl:in-package "https://github.com/g000001/srfi-100#internals")
+
+
 (in-readtable :quasiquote)
 
-(def-suite srfi-100)
 
-(in-suite srfi-100)
+(def-suite* srfi-100)
+
 
 (defmacro == (a => b)
   (declare (ignore =>))
   `(is (equal ,a ',b)))
 
+
 (defmacro === (a => b)
   (declare (ignore =>))
   `(is (equalp ,a ',b)))
+
 
 (test :define-lambda-object
   (defparameter *color* 'black)
@@ -226,13 +230,16 @@
              (set! y (+ j y))
              (set! z (+ k z)) ))))))
 
+
 (test :error1
   (signals (cl:error)
     (define-lambda-object (cpoint ppoint) x y color)))
 
+
 (test :error-cp
   (signals (cl:error)
     (define-function ap (make-cpoint 3 33 'black))))
+
 
 (test :2
   (define-lambda-object o1 (x))
@@ -247,4 +254,5 @@
   (is-true (p1? (make-o4 1 2)))
   (is-false (o2? (make-o4 1 2))))
 
-;;; eof
+
+;;; *EOF*

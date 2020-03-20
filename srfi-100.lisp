@@ -1,6 +1,6 @@
 ;;;; srfi-100.lisp
 
-(cl:in-package :srfi-100.internal)
+(cl:in-package "https://github.com/g000001/srfi-100#internals")
 (in-readtable :quasiquote)
 
 ;; Reference Implementation
@@ -318,6 +318,8 @@
 ;;;      (group-sort () () g f))))
 ;;;
 
+(defvar *lambda-object-table* (make-hash-table :test #'eq))
+
 ;;; define-lambda-object --- define-macro
 
 (define-macro (unquote-get symbol args)
@@ -333,7 +335,7 @@
       `(error 'define-lambda-object "not available inspection" ,symbol)
       (let ((arg (car args)))
 	`(if (eq? ,symbol ',arg)
-	     ,(intern (symbol-name arg) :srfi-100.internal)
+	     ,(intern (symbol-name arg) #.*package*)
 	     (unquote-get* ,symbol ,(cdr args))))))
 
 (define-macro (unquote-set! symbol new-val args iargs)
@@ -448,6 +450,9 @@
 ;; 	'()
 ;; 	(cons (cons (car ls) n) (loop (cdr ls) (+ 1 n))))))
 
+(defmacro *%lambda-object%*? (obj)
+  `(gethash ,obj *lambda-object-table*))
+
 (defmacro define-object (name gr gi fm fi r o a c v h)
   (let ((safe-name (gensym ".safe-name. "))
 	(safe-parent (gensym ".safe-parent. "))
@@ -460,16 +465,16 @@
 	;; (safe-eq (gensym))
 	;; (safe-arg (gensym))
 	(group-name (symbol->string name)) )
-    (let ((make-object (intern (format nil
-                                       "MAKE-~A"
-                                       (string-upcase  group-name) )))
-	  (make-object-by-name (intern (format nil
-                                               "MAKE-~A~A"
-                                               (string-upcase group-name)
-                                               "-BY-NAME" )))
-	  (pred-object (intern (format nil
-                                       "~A~A"
-                                       group-name "?"))))
+    (let ((make-object (intern (concatenate 'string
+                                            (string 'make-)
+                                            (string group-name))))
+	  (make-object-by-name (intern (concatenate 'string
+                                                    (string 'make-)
+                                                    (string group-name)
+                                                    (string '-by-name))))
+	  (pred-object (intern (concatenate 'string
+                                            (string group-name)
+                                            "?"))))
       `(let (,safe-name
              ,safe-parent
              ,makers)
@@ -508,7 +513,6 @@
                  (cons (seq-lambda ,r ,o
                                    (let* ,a
                                      (flet ((*%lambda-object%* (,arg &rest ,args)
-                                              "*%lambda-object%*" ;FIXME
                                               (if (null? ,args)
                                                   (unquote-get
                                                    ,arg
@@ -516,7 +520,9 @@
                                                   (if (null? (cdr ,args))
                                                       (unquote-set! ,arg (car ,args) ,fm ,(map #'car fi))
                                                       ,safe-name ))))
-                                       #'*%lambda-object%* ) ))
+                                       (setf (*%lambda-object%*?  #'*%lambda-object%*)
+                                             T)
+                                       #'*%lambda-object%*)))
                        (key-lambda ,r ,o
                                    (let* ,a
                                      (flet ((*%lambda-object%* (,arg &rest ,args)
@@ -526,14 +532,15 @@
                                                   (if (null? (cdr ,args))
                                                       (unquote-set! ,arg (car ,args) ,fm ,(map #'car fi))
                                                       ,safe-name ))))
-                                       #'*%lambda-object%* ))))))
+                                       (setf (*%lambda-object%*?  #'*%lambda-object%*)
+                                             T)
+                                       #'*%lambda-object%*))))))
 	 (define-function ,make-object (car ,makers))
 	 (define-function ,make-object-by-name (cdr ,makers))
 	 ;; The predicate procedure is implementation dependant.
 	 (define-function (,pred-object object)
            ;; (and (eq? '*%lambda-object%* (object-name object)) ;mzscheme
-           (and (string= "*%lambda-object%*"
-                         (documentation object 'function) ) ;FIXME
+           (and (*%lambda-object%*? object)
                 (let ((group (funcall object :false :false :false)))
                   (or (eq? ,safe-name group)
                       (labels ((lp (group-list)

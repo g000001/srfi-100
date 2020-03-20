@@ -1,4 +1,4 @@
-* SRFI 100: define-lambda-object
+* SRFI 100 for CL: define-lambda-object
 
 - Copyright (c) 2009 Joo ChurlSoo.
 
